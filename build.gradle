@@ -1,0 +1,94 @@
+plugins {
+	id "java"
+	id "idea"
+	id "jacoco"
+	id "io.freefair.lombok" version "5.3.0"
+}
+
+group = "com.mrlonis"
+version = "0.0.1-SNAPSHOT"
+archivesBaseName = "java-image-comparison"
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
+}
+
+compileJava {
+	options.deprecation = true
+	options.warnings = true
+	options.compilerArgs << "-Xlint:unchecked"
+}
+
+compileTestJava {
+	options.deprecation = true
+	options.warnings = true
+	options.compilerArgs << "-Xlint:unchecked"
+}
+
+jacoco {
+	toolVersion = "0.8.5"
+}
+def filesToExcludeFromCoverage = ["**/com/mrlonis/configuration/**",
+								  "**/com/mrlonis/controller/filters/**",
+								  "**/com/mrlonis/dto/**",
+								  "**/com/mrlonis/interfaces/**",
+								  "**/com/mrlonis/SpringBootProjectTemplateApplication.*"]
+
+test {
+	finalizedBy jacocoTestReport
+	useJUnitPlatform()
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.enabled true
+		csv.enabled false
+	}
+
+	afterEvaluate {
+		classDirectories.from = files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: filesToExcludeFromCoverage)
+		})
+	}
+}
+
+jacocoTestCoverageVerification {
+	afterEvaluate {
+		classDirectories.from = files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: filesToExcludeFromCoverage)
+		})
+	}
+
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.00
+			}
+		}
+		rule {
+			limit {
+				counter = "BRANCH"
+				value = "COVEREDRATIO"
+				minimum = 0.00
+			}
+		}
+	}
+
+	mustRunAfter jacocoTestReport
+}
+
+check {
+	dependsOn jacocoTestCoverageVerification
+}
+
+build {
+	dependsOn jacocoTestReport
+}
