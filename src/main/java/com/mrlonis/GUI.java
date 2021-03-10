@@ -1,7 +1,5 @@
 package com.mrlonis;
 
-import com.mrlonis.dto.Image;
-import com.mrlonis.utils.Constants;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -30,15 +28,10 @@ import javax.swing.UIManager;
 
 public class GUI extends JFrame {
 
+    /**
+     *
+     */
     private static final long serialVersionUID = 6320759299671037262L;
-    // Lookup table for previously computed similarities.
-    private Map<Integer, Double> simCache = new HashMap<>();
-    // Images to compare.
-    private Image leftImage, rightImage;
-    // Display panels for images.
-    private ArrayList<ImagePanel> panels = new ArrayList<>();
-    // Indicative of whether or not the xray is turned on (initially false).
-    private boolean xrayEffect;
 
     static {
         try {
@@ -50,6 +43,9 @@ public class GUI extends JFrame {
 
     // bitSelector is the interface element for selecting desired number of bits per channel.
     JSlider bitSelector = new JSlider(SwingConstants.HORIZONTAL, 1, 8, 8) {
+        /**
+         *
+         */
         private static final long serialVersionUID = 2745885405011315969L;
 
         {
@@ -67,6 +63,9 @@ public class GUI extends JFrame {
     // colorBox is the interface element for displaying the most recently selected color
     // from one of the images.
     JLabel colorBox = new JLabel("00 00 00") {
+        /**
+         *
+         */
         private static final long serialVersionUID = -3598882915133834212L;
 
         {
@@ -84,6 +83,15 @@ public class GUI extends JFrame {
             setText(text);
         }
     };
+    // Lookup table for previously computed similarities.
+    private final Map<Integer, Double> simCache = new HashMap<>();
+    // Images to compare.
+    private final Image leftImage;
+	private final Image rightImage;
+    // Display panels for images.
+    private final ArrayList<ImagePanel> panels = new ArrayList<>();
+    // Indicative of whether or not the xray is turned on (initially false).
+    private boolean xrayEffect;
 
     /**
      * Constructs a window to display two images and compare them for similarity after quantization.
@@ -96,6 +104,9 @@ public class GUI extends JFrame {
         setBackground(Color.WHITE);
 
         JPanel main = new JPanel() {
+            /**
+             *
+             */
             private static final long serialVersionUID = -3538371272208108362L;
 
             {
@@ -107,6 +118,9 @@ public class GUI extends JFrame {
         // sideBySide is the interface element for displaying the two images side by side.
         ImagePanel A = new ImagePanel(leftImage), B = new ImagePanel(rightImage);
         JPanel sideBySide = new JPanel() {
+            /**
+             *
+             */
             private static final long serialVersionUID = -8638776654159584375L;
 
             {
@@ -121,6 +135,9 @@ public class GUI extends JFrame {
 
         // controls is the interface element holding the control panel.
         JPanel controls = new JPanel() {
+            /**
+             *
+             */
             private static final long serialVersionUID = 4287137813176043278L;
 
             {
@@ -139,6 +156,9 @@ public class GUI extends JFrame {
 
         controls.add(Box.createRigidArea(new Dimension(30, 0)));
         controls.add(new JPanel() {
+            /**
+             *
+             */
             private static final long serialVersionUID = -1835311537011626348L;
 
             {
@@ -152,6 +172,9 @@ public class GUI extends JFrame {
 
         controls.add(Box.createRigidArea(new Dimension(30, 0)));
         controls.add(new JPanel() {
+            /**
+             *
+             */
             private static final long serialVersionUID = -7189354716916668768L;
 
             {
@@ -186,11 +209,9 @@ public class GUI extends JFrame {
 
         main.add(sideBySide);
         main.add(Box.createRigidArea(new Dimension(0, 30)));
-        ;
-        main.add(controls);
+		main.add(controls);
         main.add(Box.createRigidArea(new Dimension(0, 30)));
-        ;
-        setContentPane(main);
+		setContentPane(main);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setVisible(true);
@@ -201,12 +222,55 @@ public class GUI extends JFrame {
      */
     private double similarity() {
         int bitsPerChannel = bitSelector.getValue();
-        if (simCache.containsKey(bitsPerChannel)) {
-            return simCache.get(bitsPerChannel);
-        }
+		if (simCache.containsKey(bitsPerChannel)) {
+			return simCache.get(bitsPerChannel);
+		}
         double sim = Driver.similarity(leftImage, rightImage, bitsPerChannel);
         simCache.put(bitsPerChannel, sim); // Jot down for later.
         return sim;
+    }
+
+    /**
+     * Fires up the GUI with two randomly selected images.
+     */
+    public static void main(String[] args) {
+        // Load all the paintings in the image directory.
+        List<Image> paintings = new ArrayList<>();
+		for (File file : new File(Constants.IMAGE_DIR).listFiles()) {
+			paintings.add(new Image(file.getPath()));
+		}
+        int n = paintings.size();
+        // Choose two different images, at random and with equal probability.
+        Random rand = new Random();
+        int i = rand.nextInt(n), j = rand.nextInt(n - 1);
+		if (j >= i) {
+			j++;
+		}
+        Image pic1 = paintings.get(i), pic2 = paintings.get(j);
+        SwingUtilities.invokeLater(() -> new GUI(pic1, pic2));
+    }
+
+    /**
+     * Returns a color that contrasts visually with the given color.
+     */
+    public static Color getContrastColor(Color color) {
+        double y = (299 * color.getRed() + 587 * color.getGreen() + 114 * color.getBlue()) / 1000;
+        return y >= 128 ? Color.BLACK : Color.WHITE;
+    }
+
+    /**
+     * Returns a black and white version of the given image, where pixels matching color are white.
+     */
+    private static Image xray(Color color,
+                              Image image) {
+        Image copy = new Image(image);
+		for (int x = 0; x < copy.getWidth(); x++) {
+			for (int y = 0; y < copy.getHeight(); y++) {
+				copy.setColor(x, y, copy.getColor(x, y)
+										.equals(color) ? Color.WHITE : Color.BLACK);
+			}
+		}
+        return copy;
     }
 
     /**
@@ -214,9 +278,13 @@ public class GUI extends JFrame {
      * colorBox control accordingly.
      */
     class ImagePanel extends JPanel {
+
+        /**
+         *
+         */
         private static final long serialVersionUID = -121987832051247515L;
         // The actual image.
-        private Image image;
+        private final Image image;
         // The quantized image being displayed.
         private Image quantImage;
         // A timer to trigger the xray effect during a long press.
@@ -242,9 +310,9 @@ public class GUI extends JFrame {
                         public void run() {
                             xrayEffect = true;
                             // Xray both panels, not just the this one.
-                            for (ImagePanel panel : panels) {
-                                panel.repaint();
-                            }
+							for (ImagePanel panel : panels) {
+								panel.repaint();
+							}
                         }
                     }, 100);
 
@@ -254,9 +322,9 @@ public class GUI extends JFrame {
                     timer.cancel();
                     if (xrayEffect) {
                         xrayEffect = false;
-                        for (ImagePanel panel : panels) {
-                            panel.repaint();
-                        }
+						for (ImagePanel panel : panels) {
+							panel.repaint();
+						}
                     }
                 }
             });
@@ -265,54 +333,11 @@ public class GUI extends JFrame {
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
             quantImage = image.quantize(bitSelector.getValue());
-            if (xrayEffect) {
-                xray(colorBox.getBackground(), quantImage).draw(g);
-            } else {
-                quantImage.draw(g);
-            }
+			if (xrayEffect) {
+				xray(colorBox.getBackground(), quantImage).draw(g);
+			} else {
+				quantImage.draw(g);
+			}
         }
-    }
-
-    /**
-     * Returns a color that contrasts visually with the given color.
-     */
-    public static Color getContrastColor(Color color) {
-        double y = (299 * color.getRed() + 587 * color.getGreen() + 114 * color.getBlue()) / 1000;
-        return y >= 128 ? Color.BLACK : Color.WHITE;
-    }
-
-    /**
-     * Returns a black and white version of the given image, where pixels matching color are white.
-     */
-    private static Image xray(Color color,
-                              Image image) {
-        Image copy = new Image(image);
-        for (int x = 0; x < copy.getWidth(); x++) {
-            for (int y = 0; y < copy.getHeight(); y++) {
-                copy.setColor(x, y, copy.getColor(x, y)
-                                        .equals(color) ? Color.WHITE : Color.BLACK);
-            }
-        }
-        return copy;
-    }
-
-    /**
-     * Fires up the com.mrlonis.GUI with two randomly selected images.
-     */
-    public static void main(String[] args) {
-        // Load all the paintings in the image directory.
-        List<Image> paintings = new ArrayList<>();
-        for (File file : new File(Constants.IMAGE_DIR).listFiles()) {
-            paintings.add(new Image(file.getPath()));
-        }
-        int n = paintings.size();
-        // Choose two different images, at random and with equal probability.
-        Random rand = new Random();
-        int i = rand.nextInt(n), j = rand.nextInt(n - 1);
-        if (j >= i) {
-            j++;
-        }
-        Image pic1 = paintings.get(i), pic2 = paintings.get(j);
-        SwingUtilities.invokeLater(() -> new GUI(pic1, pic2));
     }
 }

@@ -1,4 +1,4 @@
-package com.mrlonis.utils;
+package com.mrlonis;
 
 public class Constants {
 	public static final String TITLE = "Project 1: Palette Similarity";
